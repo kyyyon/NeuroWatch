@@ -3,7 +3,7 @@ import os
 from urllib.parse import quote
 
 app = Flask(__name__)
-PORT = 8000
+PORT = 3000
 BASE_DIR = r"E:\recordings"  # This should be the parent directory of `recordings`
 
 @app.after_request

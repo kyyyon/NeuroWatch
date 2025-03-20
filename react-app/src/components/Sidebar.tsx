@@ -1,16 +1,31 @@
-import React from "react";
+import React, { useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
 
 interface SidebarProps {
   toggleCamera: (cameraIndex: number) => void;
   togglePlaybackControls: (cameraIndex: number) => void;
+  onDateChange?: (date: Date | undefined) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   toggleCamera,
   togglePlaybackControls,
+  onDateChange,
 }) => {
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+
+  const [theme] = useState(
+    window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  );
+
+  React.useEffect(() => {
+    if (onDateChange) {
+      onDateChange(date);
+    }
+  }, [date, onDateChange]);
+
   return (
-    <div className="w-64 bg-gray-700 text-white p-4">
+    <div className="modeSelector w-64 text-white p-4 b-4">
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Cameras</h3>
         <ul>
@@ -33,7 +48,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
       <div>
         <h3 className="text-lg font-semibold mb-2">Calendar</h3>
-        <div id="calendar" className="bg-gray-600 p-2 rounded"></div>
+        <div id="calendar" className="bg-gray-600 p-2 rounded">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className={`${theme} rounded-md border shadow`}
+          />
+        </div>
       </div>
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Hide Playback Controls</h3>

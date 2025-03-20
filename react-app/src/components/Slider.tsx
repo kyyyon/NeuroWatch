@@ -8,6 +8,8 @@ const Slider = forwardRef<HTMLInputElement, SliderProps>(
   ({ onValueChange }, ref) => {
     const [sliderValue, setSliderValue] = useState(0);
     const [selectedDateTime, setSelectedDateTime] = useState("");
+    const [scrubberTime, setScrubberTime] = useState(0);
+    const currentPercent = (sliderValue / 86400000) * 100;
 
     useEffect(() => {
       const date = new Date(sliderValue);
@@ -22,21 +24,17 @@ const Slider = forwardRef<HTMLInputElement, SliderProps>(
     };
 
     return (
-      <div className="w-full bg-gray-700 text-white p-4">
-        <h3 className="text-lg font-semibold mb-2">Select Date and Time</h3>
+      <div className="videoScrubber w-full">
         <input
+          style={{ "--pct": `${currentPercent}%` } as React.CSSProperties}
           type="range"
-          id="datetime-slider"
           min="0"
-          max="86400000"
+          max="86399999"
           value={sliderValue}
           onChange={handleSliderChange}
           className="w-full"
           ref={ref}
         />
-        <div id="selected-datetime" className="mt-2">
-          {selectedDateTime}
-        </div>
       </div>
     );
   }

@@ -13,10 +13,12 @@ recordings_dir = r"E:\recordings"  # Use raw string to avoid escape character is
 rtsp_urls = [
     "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=1&subtype=0",
     "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=2&subtype=0",
-    "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=3&subtype=0",
-    "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=4&subtype=0"
+    0,
+    # "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=3&subtype=0",
+    # "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=4&subtype=0",
+    "rtsp://gynryiie:Jason@15@192.168.0.20:554/stream2",
 ]
-
+# rtsp://gynryiie:Jason@15@192.168.0.20:554/stream1
 # Boolean flags for recording each camera
 record_flags = [True, True, True, True]  # Enable recording for all cameras
 
@@ -70,6 +72,9 @@ def start_ffmpeg_process(output_dir, width, height, fps):
     segment_filename = os.path.join(output_dir, "segment_%03d.ts")
     playlist_filename = os.path.join(output_dir, "playlist.m3u8")
 
+    # MP4 filename
+    mp4_filename = os.path.join(output_dir, "recording.mp4")
+
     # Calculate keyframe interval based on FPS
     keyframe_interval = int(fps * 10)  # 10-second keyframe interval
 
@@ -82,7 +87,10 @@ def start_ffmpeg_process(output_dir, width, height, fps):
         '-r', str(fps),  # Frame rate
         '-i', '-',  # Input from stdin
 
-        # Video encoding settings
+        # Suppress logs
+        '-loglevel', 'quiet',
+
+        # Video encoding settings for HLS
         '-c:v', 'libx264',  # Video codec
         '-preset', 'fast',  # Encoding speed/quality tradeoff
         '-crf', '23',  # Constant Rate Factor (quality)
@@ -90,22 +98,24 @@ def start_ffmpeg_process(output_dir, width, height, fps):
         '-keyint_min', str(keyframe_interval),  # Minimum keyframe interval
         '-force_key_frames', f"expr:gte(t,n_forced*10)",  # Force keyframes every 10 seconds
 
-        # Audio settings (optional, if audio is present)
-        '-c:a', 'aac',  
-
         # HLS output settings
         '-f', 'hls',  # Output format (HLS)
         '-hls_time', '10',  # Segment duration (10 seconds)
         '-hls_list_size', '0',  # Keep all segments in the playlist
         '-hls_segment_type', 'mpegts',  # Segment format
         '-hls_segment_filename', segment_filename,  # Segment filenames
-
-        # Enable program date time for precise seeking
-        '-hls_flags', 'program_date_time+split_by_time',
-
-        # Set the start time (if needed, otherwise it defaults to the current time)
+        '-hls_flags', 'program_date_time+split_by_time',  # Enable program date time for precise seeking
         '-start_at_zero',  # Ensures consistent timestamps starting from zero
-        playlist_filename  # Playlist filename
+        playlist_filename,  # Playlist filename
+
+        # Video encoding settings for MP4
+        '-vf', 'scale=854:480',  # Scale to 480p
+        '-r', '30',  # Frame rate for MP4
+        '-c:v', 'libx264',  # Video codec
+        '-preset', 'fast',  # Encoding speed/quality tradeoff
+        '-crf', '23',  # Constant Rate Factor (quality)
+        '-movflags', 'faststart',  # Optimize for streaming
+        mp4_filename  # MP4 filename
     ]
 
     return subprocess.Popen(command, stdin=subprocess.PIPE)
@@ -141,16 +151,17 @@ def capture_and_record(rtsp_url, index):
     print(f"Starting recording for camera {index + 1} at {recording_fps} FPS. Output directory: {output_dir}")
     ffmpeg_process = start_ffmpeg_process(output_dir, width, height, recording_fps)
     
+    # Add tracking for last split time
+    last_split_time = time.time()
+    
     while True:
         ret, frame = cap.read()
         if not ret:
             print(f"Failed to fetch frame from stream {index + 1}")
             break
 
-        # Increment the frame counter for this camera
         frame_counters[index] += 1
 
-        # Add overlay if the flag is True
         if overlay_flags[index]:
             cv2.putText(frame, resolution_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(frame, fps_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -159,21 +170,32 @@ def capture_and_record(rtsp_url, index):
             frames[index] = frame
         
         if record_flags[index]:
-            # Get the current time
             current_time = datetime.now()
             current_minute = current_time.minute
+            elapsed_time = time.time() - last_split_time
 
-            # Check if the current minute is divisible by MAX_DURATION (in minutes)
+            # Primary check: Try to split at exact hour marks
             max_duration_minutes = MAX_DURATION // 60
+            should_split = False
+
             if current_minute % max_duration_minutes == 0 and current_time.second == 0:
+                should_split = True
+            # Fallback: If we somehow missed the exact mark, split when exceeding max duration
+            elif elapsed_time >= MAX_DURATION:
+                print(f"Fallback split triggered for camera {index + 1} after exceeding duration")
+                should_split = True
+
+            if should_split:
                 if ffmpeg_process is not None:
                     ffmpeg_process.stdin.close()
                     ffmpeg_process.wait()
                     print(f"Recording for camera {index + 1} split at {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                
                 timestamp = current_time.strftime("%Y-%m-%d_%H-%M-%S")
                 output_dir = os.path.join(camera_dir, timestamp)
                 print(f"Starting new recording for camera {index + 1} at {recording_fps} FPS. Output directory: {output_dir}")
                 ffmpeg_process = start_ffmpeg_process(output_dir, width, height, recording_fps)
+                last_split_time = time.time()  # Reset the split timer
             
             if ffmpeg_process is not None:
                 ffmpeg_process.stdin.write(frame.tobytes())
