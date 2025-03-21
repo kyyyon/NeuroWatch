@@ -5,20 +5,26 @@ import os
 import time
 from datetime import datetime
 import subprocess
+import json
 
-# Directory to save recordings
-recordings_dir = r"E:\recordings"  # Use raw string to avoid escape character issues
+# Load configuration from JSON file
+def load_config():
+    config_path = os.path.join(os.path.dirname(__file__), 'appconfig.json')
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Error: Configuration file not found at {config_path}")
+        exit(1)
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON in configuration file")
+        exit(1)
 
-# RTSP URLs for channels 1 to 4
-rtsp_urls = [
-    "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=1&subtype=0",
-    "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=2&subtype=0",
-    0,
-    # "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=3&subtype=0",
-    # "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=4&subtype=0",
-    "rtsp://gynryiie:Jason@15@192.168.0.20:554/stream2",
-]
-# rtsp://gynryiie:Jason@15@192.168.0.20:554/stream1
+# Load configuration
+config = load_config()
+recordings_dir = config['recordings_dir']
+rtsp_urls = config['rtsp_urls']
+
 # Boolean flags for recording each camera
 record_flags = [True, True, True, True]  # Enable recording for all cameras
 
@@ -35,7 +41,7 @@ default_frame = np.zeros((480, 640, 3), dtype=np.uint8)  # Black frame
 camera_ready_events = [threading.Event() for _ in range(4)]
 
 # Maximum duration for splitting recordings (in seconds)
-MAX_DURATION = 60 * 60  # 1 hour in seconds
+MAX_DURATION = 60 * 10  # 1 hour in seconds
 
 # Frame counters for debugging
 frame_counters = [0] * 4  # Tracks the number of frames captured for each camera

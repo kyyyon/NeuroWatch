@@ -1,0 +1,9 @@
+{
+    "recordings_dir": "E:\\recordings",
+    "rtsp_urls": [
+        "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=1&subtype=0",
+        "rtsp://admin1:Jason@15@192.168.0.7:554/cam/realmonitor?channel=2&subtype=0",
+        0,
+        "rtsp://gynryiie:Jason@15@192.168.0.20:554/stream2"
+    ]
+}

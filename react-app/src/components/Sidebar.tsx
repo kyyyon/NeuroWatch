@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDateChange,
 }) => {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [checkedCameras, setCheckedCameras] = useState([1, 2, 3, 4]);
 
   const [theme] = useState(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
@@ -25,19 +26,26 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [date, onDateChange]);
 
   return (
-    <div className="modeSelector w-64 text-white p-4 b-4">
+    <div className="rightSidebar min-w-32 text-white p-4 b-4 overflow-y-auto overflow-x-hidden">
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Cameras</h3>
         <ul>
           {[1, 2, 3, 4].map((i) => (
             <li key={i}>
-              <label className="flex items-center">
+              <label className="flex items-center gap-[15px]">
                 <input
                   type="checkbox"
                   value={`cam${i}`}
-                  checked
+                  checked={checkedCameras.includes(i)}
                   className="mr-2"
-                  onChange={() => toggleCamera(i)}
+                  onChange={() => {
+                    setCheckedCameras((prev) =>
+                      prev.includes(i)
+                        ? prev.filter((cam) => cam !== i)
+                        : [...prev, i]
+                    );
+                    toggleCamera(i);
+                  }}
                 />{" "}
                 CAM {i}
               </label>
@@ -46,16 +54,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </ul>
       </div>
-      <div>
+      <div className="mb-6 flex flex-col gap-2 ">
         <h3 className="text-lg font-semibold mb-2">Calendar</h3>
-        <div id="calendar" className="bg-gray-600 p-2 rounded">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className={`${theme} rounded-md border shadow`}
-          />
-        </div>
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          className={`${theme} rounded-md border shadow place-self-center`}
+        />
       </div>
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Hide Playback Controls</h3>

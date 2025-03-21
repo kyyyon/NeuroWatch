@@ -12,7 +12,9 @@ import modes from "./components/modes";
 import { debounce, set } from "lodash";
 import generateContent from "./api";
 import functions from "./functions";
+import { ThemeProvider } from "@/components/theme-provider";
 
+import "./styles/main.sass";
 const chartModes = Object.keys(modes.Chart.subModes);
 
 // Interface for timecode objects
@@ -607,242 +609,250 @@ const App: React.FC = () => {
     ).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")} ${ampm}`;
   };
   return (
-    <main className={`${theme} h-screen flex flex-col`}>
-      <Header updateGridLayout={updateGridLayout} />
-      <div className="flex w-full overflow-x-hidden flex-1">
-        <div className="flex-1 flex flex-col">
-          <div className="flex flex-1 flex-grow">
-            {true && (
-              <>
-                <div className={c("modeSelector", { hide: !showSidebar })}>
-                  {hasSubMode ? (
-                    <>
-                      <div>
-                        {isCustomMode ? (
-                          <>
-                            <h2>Custom prompt:</h2>
-                            <textarea
-                              placeholder="Type a custom prompt..."
-                              value={customPrompt}
-                              onChange={(e) => setCustomPrompt(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  onModeSelect(selectedMode);
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <main className={`${theme} h-screen flex flex-col`}>
+        <Header updateGridLayout={updateGridLayout} />
+        <div className="flex w-full overflow-hidden flex-1 min-h-0">
+          <div className="flex flex-col w-full overflow-hidden min-h-0">
+            <div className="flex flex-1 min-h-0">
+              {true && (
+                <>
+                  <div className={c("modeSelector", { hide: !showSidebar })}>
+                    {hasSubMode ? (
+                      <>
+                        <div>
+                          {isCustomMode ? (
+                            <>
+                              <h2>Custom prompt:</h2>
+                              <textarea
+                                placeholder="Type a custom prompt..."
+                                value={customPrompt}
+                                onChange={(e) =>
+                                  setCustomPrompt(e.target.value)
                                 }
-                              }}
-                              rows="5"
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <h2>Chart this video by:</h2>
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    onModeSelect(selectedMode);
+                                  }
+                                }}
+                                rows="5"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <h2>Chart this video by:</h2>
 
-                            <div className="modeList">
-                              {chartModes.map((mode) => (
-                                <button
-                                  key={mode}
-                                  className={c("button", {
-                                    active: mode === chartMode,
-                                  })}
-                                  onClick={() => setChartMode(mode)}
-                                >
-                                  {mode}
-                                </button>
-                              ))}
-                            </div>
-                            <textarea
-                              className={c({ active: isCustomChartMode })}
-                              placeholder="Or type a custom prompt..."
-                              value={chartPrompt}
-                              onChange={(e) => setChartPrompt(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  onModeSelect(selectedMode);
-                                }
-                              }}
-                              onFocus={() => setChartMode("Custom")}
-                              rows="2"
-                            />
-                          </>
-                        )}
-                        <button
-                          className="button generateButton"
-                          onClick={() => onModeSelect(selectedMode)}
-                          disabled={
-                            (isCustomMode && !customPrompt.trim()) ||
-                            (isChartMode &&
-                              isCustomChartMode &&
-                              !chartPrompt.trim())
-                          }
-                        >
-                          ▶️ Generate
-                        </button>
-                      </div>
-                      <div className="backButton">
-                        <button
-                          onClick={() => setSelectedMode(Object.keys(modes)[0])}
-                        >
-                          <span className="icon">chevron_left</span>
-                          Back
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <h2>Explore this video via:</h2>
-                        <div className="modeList">
-                          {Object.entries(modes).map(([mode, { emoji }]) => (
-                            <button
-                              key={mode}
-                              className={c("button", {
-                                active: mode === selectedMode,
-                              })}
-                              onClick={() => setSelectedMode(mode)}
-                            >
-                              <span className="emoji">{emoji}</span> {mode}
-                            </button>
-                          ))}
+                              <div className="modeList">
+                                {chartModes.map((mode) => (
+                                  <button
+                                    key={mode}
+                                    className={c("button", {
+                                      active: mode === chartMode,
+                                    })}
+                                    onClick={() => setChartMode(mode)}
+                                  >
+                                    {mode}
+                                  </button>
+                                ))}
+                              </div>
+                              <textarea
+                                className={c({ active: isCustomChartMode })}
+                                placeholder="Or type a custom prompt..."
+                                value={chartPrompt}
+                                onChange={(e) => setChartPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    onModeSelect(selectedMode);
+                                  }
+                                }}
+                                onFocus={() => setChartMode("Custom")}
+                                rows="2"
+                              />
+                            </>
+                          )}
+                          <button
+                            className="button generateButton"
+                            onClick={() => onModeSelect(selectedMode)}
+                            disabled={
+                              (isCustomMode && !customPrompt.trim()) ||
+                              (isChartMode &&
+                                isCustomChartMode &&
+                                !chartPrompt.trim())
+                            }
+                          >
+                            ▶️ Generate
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          className="button generateButton"
-                          onClick={() => uploadVideo()}
-                        >
-                          ▶️ Upload
-                        </button>
-                        <button
-                          className="button generateButton"
-                          onClick={() => onModeSelect(selectedMode)}
-                        >
-                          ▶️ Generate
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <button
-                  className="collapseButton"
-                  onClick={() => setShowSidebar(!showSidebar)}
-                >
-                  <span className="icon">
-                    {showSidebar ? "chevron_left" : "chevron_right"}
-                  </span>
-                </button>
-              </>
-            )}
-            <div className="videoPlayer">
-              <VideoGrid
-                activeVideo={activeVideo}
-                setActiveVideo={setActiveVideo}
-              />
-              <div className="videoControls">
-                <Slider
-                  ref={sliderRef}
-                  onValueChange={debouncedHandleSliderChange}
-                />
-                <div className="videoTime">
-                  <button>
-                    <span className="icon" onClick={togglePlay}>
-                      {isPlaying ? "pause" : "play_arrow"}
+                        <div className="backButton">
+                          <button
+                            onClick={() =>
+                              setSelectedMode(Object.keys(modes)[0])
+                            }
+                          >
+                            <span className="icon">chevron_left</span>
+                            Back
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <h2>Explore this video via:</h2>
+                          <div className="modeList">
+                            {Object.entries(modes).map(([mode, { emoji }]) => (
+                              <button
+                                key={mode}
+                                className={c("button", {
+                                  active: mode === selectedMode,
+                                })}
+                                onClick={() => setSelectedMode(mode)}
+                              >
+                                <span className="emoji">{emoji}</span> {mode}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            className="button generateButton"
+                            onClick={() => uploadVideo()}
+                          >
+                            ▶️ Upload
+                          </button>
+                          <button
+                            className="button generateButton"
+                            onClick={() => onModeSelect(selectedMode)}
+                          >
+                            ▶️ Generate
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    className="collapseButton"
+                    onClick={() => setShowSidebar(!showSidebar)}
+                  >
+                    <span className="icon">
+                      {showSidebar ? "chevron_left" : "chevron_right"}
                     </span>
                   </button>
-                  {formatTime(sliderValue)} / {formatTime(86400000 - 1)}
+                </>
+              )}
+              <div className="videoPlayer flex flex-col flex-1 min-h-0">
+                <VideoGrid
+                  activeVideo={activeVideo}
+                  setActiveVideo={setActiveVideo}
+                />
+                <div className="videoControls">
+                  <Slider
+                    ref={sliderRef}
+                    onValueChange={debouncedHandleSliderChange}
+                  />
+                  <div className="videoTime">
+                    <button>
+                      <span className="icon" onClick={togglePlay}>
+                        {isPlaying ? "pause" : "play_arrow"}
+                      </span>
+                    </button>
+                    {formatTime(sliderValue)} / {formatTime(86400000 - 1)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="h-[30%]">
-            <div className={c("tools", { inactive: !vidUrl })}>
-              <section
-                className={c("output", { ["mode" + activeMode]: activeMode })}
-                ref={scrollRef}
-              >
-                {isLoadingVideo ? "yes" : "no"}
-                {playbackRate}
-                {isLoading ? (
-                  <div className="loading">
-                    Waiting for model<span>...</span>
-                  </div>
-                ) : timecodeList ? (
-                  activeMode === "Table" ? (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Time</th>
-                          <th>Description</th>
-                          <th>Objects</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {timecodeList.map(({ time, text, objects }, i) => (
-                          <tr
+            <div className="result h-[20vh] overflow-y-auto flex-shrink-0">
+              <div className={c("tools", { inactive: !vidUrl })}>
+                <section
+                  className={c("output", { ["mode" + activeMode]: activeMode })}
+                  ref={scrollRef}
+                >
+                  {isLoadingVideo ? "yes" : "no"}
+                  {playbackRate}
+                  {isLoading ? (
+                    <div className="loading">
+                      Waiting for model<span>...</span>
+                    </div>
+                  ) : timecodeList ? (
+                    activeMode === "Table" ? (
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Description</th>
+                            <th>Objects</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {timecodeList.map(({ time, text, objects }, i) => (
+                            <tr
+                              key={i}
+                              role="button"
+                              onClick={() =>
+                                setRequestedTimecode(timeToSecs(time))
+                              }
+                            >
+                              <td>
+                                <time>{time}</time>
+                              </td>
+                              <td>{text}</td>
+                              <td>{objects.join(", ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : activeMode === "Chart" ? (
+                      <Chart
+                        data={timecodeList}
+                        yLabel={chartLabel}
+                        jumpToTimecode={setRequestedTimecode}
+                      />
+                    ) : activeMode && modes[activeMode].isList ? (
+                      <ul>
+                        {timecodeList.map(({ time, text }, i) => (
+                          <li key={i} className="outputItem">
+                            <button
+                              onClick={() =>
+                                setRequestedTimecode(timeToSecs(time))
+                              }
+                            >
+                              <time>{time}</time>
+                              <p className="text">{text}</p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      timecodeList.map(({ time, text }, i) => (
+                        <>
+                          <span
                             key={i}
+                            className="sentence"
                             role="button"
                             onClick={() =>
                               setRequestedTimecode(timeToSecs(time))
                             }
                           >
-                            <td>
-                              <time>{time}</time>
-                            </td>
-                            <td>{text}</td>
-                            <td>{objects.join(", ")}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : activeMode === "Chart" ? (
-                    <Chart
-                      data={timecodeList}
-                      yLabel={chartLabel}
-                      jumpToTimecode={setRequestedTimecode}
-                    />
-                  ) : activeMode && modes[activeMode].isList ? (
-                    <ul>
-                      {timecodeList.map(({ time, text }, i) => (
-                        <li key={i} className="outputItem">
-                          <button
-                            onClick={() =>
-                              setRequestedTimecode(timeToSecs(time))
-                            }
-                          >
                             <time>{time}</time>
-                            <p className="text">{text}</p>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    timecodeList.map(({ time, text }, i) => (
-                      <>
-                        <span
-                          key={i}
-                          className="sentence"
-                          role="button"
-                          onClick={() => setRequestedTimecode(timeToSecs(time))}
-                        >
-                          <time>{time}</time>
-                          <span>{text}</span>
-                        </span>{" "}
-                      </>
-                    ))
-                  )
-                ) : null}
-              </section>
+                            <span>{text}</span>
+                          </span>{" "}
+                        </>
+                      ))
+                    )
+                  ) : null}
+                </section>
+              </div>
             </div>
           </div>
+          <Sidebar
+            toggleCamera={toggleCamera}
+            togglePlaybackControls={togglePlaybackControls}
+            onDateChange={handleDateChange}
+          />
         </div>
-        <Sidebar
-          toggleCamera={toggleCamera}
-          togglePlaybackControls={togglePlaybackControls}
-          onDateChange={handleDateChange}
-        />
-      </div>
-    </main>
+      </main>
+    </ThemeProvider>
   );
 };
 
